@@ -34,6 +34,7 @@ export default {
           .label { font-weight: bold; color: #e30613; display: block; font-size: 12px; text-transform: uppercase; margin-bottom: 4px; }
           .value { font-size: 16px; line-height: 1.5; }
           .footer { background-color: #222222; color: #888888; padding: 20px; text-align: center; font-size: 12px; }
+          .footer a { color: #aaaaaa; text-decoration: underline; }
           .btn { display: inline-block; background-color: #222; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-top: 20px; font-weight: bold; }
         </style>
       </head>
@@ -70,6 +71,9 @@ export default {
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} NRT Elektroservice - Website Formulier</p>
+            <p style="margin-top: 10px; font-size: 11px;">
+                Systemen & Development door <a href="https://spectux.com" target="_blank">Spectux.com</a>
+            </p>
           </div>
         </div>
       </body>
@@ -84,8 +88,8 @@ export default {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "NRT Website <info@spectux.com>",
-          to: ["bartheesbeen4@gmail.com"],
+          from: "NRT Electro techniek Website <info@spectux.com>",
+          to: ["info@nrtelektroservice.nl"],
           reply_to: data.email, // Zodat je direct terug kunt mailen naar de klant
           subject: `Nieuwe aanvraag: ${data.firstname} ${data.lastname}`,
           html: htmlEmail,
