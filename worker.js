@@ -17,9 +17,10 @@ export default {
     try {
       const data = await request.json();
       
-      // Valideer categorie voor het geval dat
       const categoryName = data.category || "Algemene aanvraag";
+      const isBusiness = data.isBusiness || false;
 
+      // HTML Email opbouw
       const htmlEmail = `
       <!DOCTYPE html>
       <html>
@@ -31,23 +32,22 @@ export default {
           .header h1 { color: #ffffff; margin: 0; font-size: 22px; text-transform: uppercase; }
           .content { padding: 30px; color: #333333; }
           .field { margin-bottom: 15px; border-bottom: 1px solid #eeeeee; padding-bottom: 10px; }
-          .label { font-weight: bold; color: #e30613; display: block; font-size: 12px; text-transform: uppercase; margin-bottom: 4px; }
-          .value { font-size: 16px; line-height: 1.5; }
+          .label { font-weight: bold; color: #e30613; display: block; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+          .value { font-size: 15px; line-height: 1.5; }
           .footer { background-color: #222222; color: #888888; padding: 20px; text-align: center; font-size: 12px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Nieuwe Aanvraag: ${categoryName}</h1>
+            <h1>Nieuwe Zakelijke Aanvraag</h1>
           </div>
           <div class="content">
-            <p>Beste NRT Elektroservice,</p>
-            <p>Er is een nieuwe aanvraag binnengekomen voor de categorie: <strong>${categoryName}</strong>.</p>
+            <p>Er is een nieuwe aanvraag binnengekomen via het <strong>zakelijke formulier</strong>.</p>
             
             <div class="field">
               <span class="label">Klantnaam</span>
-              <span class="value">${data.firstname} ${data.lastname}</span>
+              <span class="value">${data.firstname} ${data.lastname || ""}</span>
             </div>
             
             <div class="field">
@@ -55,20 +55,25 @@ export default {
               <span class="value">E: ${data.email}<br>T: ${data.phone}</span>
             </div>
 
+            ${!isBusiness ? `
             <div class="field">
               <span class="label">Locatie</span>
-              <span class="value">${data.zipcode} ${data.city}<br>Huisnummer: ${data.houseNumber}</span>
+              <span class="value">${data.zipcode || ""} ${data.city || ""}<br>Huisnummer: ${data.houseNumber || ""}</span>
+            </div>
+            ` : ''}
+
+            <div class="field">
+              <span class="label">Onderwerp / Categorie</span>
+              <span class="value">${categoryName}</span>
             </div>
 
             <div class="field">
               <span class="label">Bericht</span>
-              <span class="value">${data.message || "Geen opmerkingen."}</span>
+              <span class="value">${(data.message || "Geen opmerkingen.").replace(/\n/g, '<br>')}</span>
             </div>
-            
-            ${data.attachments && data.attachments.length > 0 ? `<p style="color:#e30613;"><strong>📎 Bijlagen:</strong> Er zijn ${data.attachments.length} bestand(en) toegevoegd.</p>` : ''}
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} NRT Elektroservice - Website Formulier</p>
+            <p>&copy; ${new Date().getFullYear()} NRT Elektroservice - Zakelijk Formulier</p>
           </div>
         </div>
       </body>
@@ -85,9 +90,8 @@ export default {
           from: "NRT Elektroservice <info@spectux.com>",
           to: ["bartheesbeen4@gmail.com"],
           reply_to: data.email,
-          subject: `${categoryName.toUpperCase()}: ${data.firstname} ${data.lastname}`,
+          subject: `ZAKELIJK: ${categoryName} - ${data.firstname}`,
           html: htmlEmail,
-          attachments: data.attachments || []
         }),
       });
 
