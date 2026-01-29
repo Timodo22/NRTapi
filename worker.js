@@ -93,7 +93,7 @@ export default {
         },
         body: JSON.stringify({
           from: "NRT Elektroservice <info@spectux.com>",
-          to: ["bartheesbeen4@gmail.com"],
+          to: ["info@nrtelektroservice.nl"],
           reply_to: data.email,
           subject: `${isBusiness ? 'ZAKELIJK' : 'OFFERTE'}: ${categoryName} - ${data.firstname}`,
           html: htmlEmail,
