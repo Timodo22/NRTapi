@@ -19,92 +19,81 @@ export default {
       
       const categoryName = data.category || "Algemene aanvraag";
       const isBusiness = data.isBusiness || false;
-      
-      // Bepaal de titel van de mail op basis van het type formulier
-      const formTitle = isBusiness ? "Zakelijke Aanvraag" : `Offerte: ${categoryName}`;
+      const attachments = data.attachments || [];
 
-      const htmlEmail = `
+      // Splits de bijlagen: PDF gaat naar klant, Foto's + PDF gaan naar NRT
+      const quotePdf = attachments.find(a => a.type === 'application/pdf');
+      const photos = attachments.filter(a => a.type !== 'application/pdf');
+
+      // --- EMAIL 1: NAAR DE KLANT (MET ALLEEN DE OFFERTE) ---
+      const customerEmailHtml = `
       <!DOCTYPE html>
       <html>
-      <head>
-        <style>
-          body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-          .header { background-color: #e30613; padding: 30px; text-align: center; }
-          .header h1 { color: #ffffff; margin: 0; font-size: 20px; text-transform: uppercase; }
-          .content { padding: 30px; color: #333333; }
-          .field { margin-bottom: 15px; border-bottom: 1px solid #eeeeee; padding-bottom: 10px; }
-          .label { font-weight: bold; color: #e30613; display: block; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-          .value { font-size: 15px; line-height: 1.5; }
-          .attachment-alert { background-color: #fff5f5; border: 1px solid #ffcccc; padding: 10px; color: #e30613; border-radius: 5px; font-weight: bold; margin-top: 15px; }
-          .footer { background-color: #222222; color: #888888; padding: 20px; text-align: center; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>${formTitle}</h1>
-          </div>
-          <div class="content">
-            <p>Er is een nieuwe aanvraag binnengekomen voor: <strong>${categoryName}</strong>.</p>
-            
-            <div class="field">
-              <span class="label">Klantnaam</span>
-              <span class="value">${data.firstname} ${data.lastname || ""}</span>
-            </div>
-            
-            <div class="field">
-              <span class="label">Contactgegevens</span>
-              <span class="value">E: ${data.email}<br>T: ${data.phone}</span>
-            </div>
-
-            ${!isBusiness ? `
-            <div class="field">
-              <span class="label">Locatie</span>
-              <span class="value">${data.zipcode || ""} ${data.city || ""}<br>Huisnummer: ${data.houseNumber || ""}</span>
-            </div>
-            ` : ''}
-
-            <div class="field">
-              <span class="label">Bericht</span>
-              <span class="value">${(data.message || "Geen opmerkingen.").replace(/\n/g, '<br>')}</span>
-            </div>
-
-            ${data.attachments && data.attachments.length > 0 ? `
-              <div class="attachment-alert">
-                📎 Er zijn ${data.attachments.length} foto's/bijlagen meegeleverd (zie bijlagen in deze mail).
-              </div>
-            ` : ''}
-          </div>
-          <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} NRT Elektroservice - Website Formulier</p>
-          </div>
+      <body style="font-family: 'Segoe UI', sans-serif; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #e30613;">Bedankt voor uw aanvraag, ${data.firstname}!</h2>
+          <p>We hebben uw gegevens voor een laadpaalinstallatie goed ontvangen.</p>
+          <p>In de bijlage vindt u direct een <strong>indicatieve offerte</strong> (PDF) op basis van de door u ingevulde gegevens.</p>
+          <p>Wij gaan uw meegestuurde foto's bekijken om de situatie definitief te beoordelen. Mocht de installatie afwijken van de standaard situatie, nemen wij contact met u op.</p>
+          <br>
+          <p>Met vriendelijke groet,<br><strong>NRT Elektroservice</strong></p>
         </div>
       </body>
       </html>
       `;
 
-      // HIER GEBEURT HET: We voegen attachments weer toe aan de Resend API call
-      const resendResponse = await fetch("https://api.resend.com/emails", {
+      // Verzend naar klant
+      const emailToCustomer = fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${env.RESEND_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "NRT Elektroservice <info@spectux.com>",
-          to: ["info@nrtelektroservice.nl"],
-          reply_to: data.email,
-          subject: `${isBusiness ? 'ZAKELIJK' : 'OFFERTE'}: ${categoryName} - ${data.firstname}`,
-          html: htmlEmail,
-          attachments: data.attachments || [] // Deze regel herstelt de foto's
+          from: "NRT Elektroservice <info@spectux.com>", // Let op: gebruik je geverifieerde domein
+          to: [data.email],
+          subject: `Uw Offerte Aanvraag: ${categoryName}`,
+          html: customerEmailHtml,
+          attachments: quotePdf ? [quotePdf] : [] // Alleen PDF naar klant
         }),
       });
 
-      if (!resendResponse.ok) {
-        const errorText = await resendResponse.text();
-        return new Response(JSON.stringify({ error: errorText }), { status: 500, headers: corsHeaders });
-      }
+      // --- EMAIL 2: NAAR NRT (MET FOTO'S & DATA & PDF) ---
+      const nrtEmailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: sans-serif;">
+        <h2 style="color: #e30613;">Nieuwe Aanvraag: ${data.firstname} ${data.lastname}</h2>
+        <p><strong>Type:</strong> ${isBusiness ? "Zakelijk" : "Particulier"}</p>
+        <p><strong>Email:</strong> ${data.email} | <strong>Tel:</strong> ${data.phone}</p>
+        <p><strong>Adres:</strong> ${data.houseNumber}, ${data.zipcode} ${data.city}</p>
+        <hr>
+        <h3>Details uit formulier:</h3>
+        <pre style="background: #f4f4f4; padding: 10px;">${data.message}</pre>
+        <p><em>De proefofferte en ${photos.length} foto's zijn bijgevoegd.</em></p>
+      </body>
+      </html>
+      `;
+
+      // Verzend naar NRT (alle attachments: foto's + pdf)
+      const emailToNRT = fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "NRT Website <info@spectux.com>",
+          to: ["info@nrtelektroservice.nl"], 
+          reply_to: data.email,
+          subject: `AANVRAAG: ${data.firstname} ${data.lastname} - ${categoryName}`,
+          html: nrtEmailHtml,
+          attachments: attachments // Alles naar jezelf
+        }),
+      });
+
+      // Wacht tot beide mails verstuurd zijn
+      await Promise.all([emailToCustomer, emailToNRT]);
 
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
 
