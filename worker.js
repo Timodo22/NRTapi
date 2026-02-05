@@ -84,7 +84,7 @@ export default {
         },
         body: JSON.stringify({
           from: "NRT Website <info@spectux.com>",
-          to: ["info@nrtelektroservice.nl"], 
+          to: ["bartheesbeen4@gmail.com"], 
           reply_to: data.email,
           subject: `AANVRAAG: ${data.firstname} ${data.lastname} - ${categoryName}`,
           html: nrtEmailHtml,
