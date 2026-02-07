@@ -21,8 +21,8 @@ export default {
       const data = await request.json();
 
       // --- CONFIGURATIE ---
-      const OWNER_EMAIL = "bartheesbeen4@gmail.com"; // Jouw ontvangst adres
-      const SENDER_EMAIL = "NRT Elektroservice <info@spectux.com>"; // Je geverifieerde Resend domein
+      const OWNER_EMAIL = "info@nrtelektroservice.nl"; // Jouw ontvangst adres
+      const SENDER_EMAIL = "NRT Elektroservice <info@nrtelektroservice.nl>"; // Je geverifieerde Resend domein
       
       // Data normaliseren
       const categoryName = data.category || "Algemene aanvraag";
